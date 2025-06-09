@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prospect Opportunity Analysis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral with Teal Accent -->
+    <!-- Application Structure Plan: The application is structured as a narrative, single-page dashboard. It starts with a high-level summary (Hero & Thematic Radar Chart), then allows users to explore the core argument via an interactive "Thematic Deep Dive" section. This structure was chosen because it reinforces the report's central thesis—that diverse companies share common communication challenges—better than a simple company list. Following this, users can drill down into specific "Company Profiles" or perform quantitative comparisons in the "Comparative Data Explorer". The flow concludes with actionable "Strategic Opportunities", guiding the user from understanding to action. This top-down, theme-first approach facilitates both synthesis and detailed analysis in an intuitive, non-linear way. -->
+    <!-- Visualization & Content Choices: The application uses a mix of interactive elements to serve different goals without using SVG or Mermaid. 1. Thematic Overview (Radar Chart): Goal is to provide a quick, holistic comparison of how each company scores on the key themes. A radar chart is excellent for multivariate comparison. Implemented with Chart.js. 2. Thematic Exploration (Interactive Cards): Goal is to organize qualitative data. Users click a theme to reveal relevant company-specific insights, facilitating direct comparison. Implemented with JS-powered tabs. 3. Company Comparison (Bar & Bubble Charts): Goal is to compare quantitative data. A bar chart shows workforce size directly. A bubble chart shows three dimensions (Workforce Size, Digital Transformation Score, Global Presence) for a richer comparison. Both use Chart.js. 4. Strategic Actions (Accordion): Goal is to present actionable advice in a digestible format. Implemented with JS. This variety of interactive visualizations and text blocks supports the application's exploratory structure. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; height: 400px; max-height: 50vh; }
+        .active-tab { border-color: #0d9488; color: #0d9488; background-color: #f0fdfa; }
+        .inactive-tab { border-color: transparent; color: #52525b; }
+        .modal { display: none; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .modal-content { max-height: 90vh; overflow-y: auto; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700">
+
+    <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-2">Navigating the Communication Landscape</h1>
+            <p class="text-lg text-slate-600 max-w-3xl mx-auto">An interactive analysis of shared internal communication challenges and opportunities across five key prospects.</p>
+        </header>
+
+        <main>
+            <section id="overview" class="mb-16">
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4 text-center">Executive Summary & Thematic Overview</h2>
+                    <p class="mb-6 text-slate-600">
+                        This analysis reveals that despite operating in diverse sectors—cybersecurity, mining, aviation, ed-tech, and pharmaceuticals—our key prospects share common strategic imperatives. The primary challenge is managing communication effectively across varied and geographically dispersed workforces. This has led to a strategic emphasis on employee engagement and digital transformation. The following visualization provides a high-level look at how each company aligns with the four key communication themes identified in our research.
+                    </p>
+                    <div class="chart-container max-w-3xl mx-auto">
+                        <canvas id="themesRadarChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="themes" class="mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Thematic Deep Dive</h2>
+                <p class="text-center text-slate-600 mb-8 max-w-3xl mx-auto">Explore the four core communication challenges connecting these prospects. Select a theme to see how each company addresses or is impacted by it, revealing the universal need for better visual communication solutions.</p>
+                <div class="flex flex-wrap justify-center gap-2 mb-8" id="theme-tabs"></div>
+                <div id="theme-content" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </section>
+
+            <section id="companies" class="mb-16">
+                 <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Company Profiles</h2>
+                 <p class="text-center text-slate-600 mb-8 max-w-3xl mx-auto">While shared themes are powerful, each company has a unique context. Click on a logo below to explore a detailed profile, including their specific operational environment, key initiatives, and the direct opportunity for ScreenCloud.</p>
+                 <div id="company-logos" class="flex flex-wrap justify-center items-center gap-x-8 gap-y-6"></div>
+            </section>
+
+            <section id="comparison" class="mb-16">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Comparative Data Explorer</h2>
+                <p class="text-center text-slate-600 mb-8 max-w-3xl mx-auto">Visualize the scale of opportunity across the prospects. The charts below offer different ways to compare the companies based on key metrics like workforce size and their pace of digital transformation.</p>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">Workforce Size Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="workforceBarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">Prospect Landscape</h3>
+                        <div class="chart-container">
+                            <canvas id="landscapeBubbleChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="opportunity">
+                <h2 class="text-3xl font-bold text-slate-800 mb-2 text-center">Strategic Opportunity & Conversation Starters</h2>
+                <p class="text-center text-slate-600 mb-8 max-w-3xl mx-auto">The shared challenges across these companies represent a significant opportunity. Use the following tailored conversation starters to engage prospects by connecting their specific needs to the value of visual communication.</p>
+                <div id="accordion-container" class="max-w-4xl mx-auto space-y-4"></div>
+            </section>
+        </main>
+    </div>
+    
+    <div id="company-modal" class="modal"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const appData = {
+        companies: [
+            { id: '1password', name: '1Password', industry: 'Cybersecurity', workforce: 1300, globalPresence: 1, logo: '🔒', dtScore: 5, themes: { distributed: 5, engagement: 4, digital: 5, security: 5 }, summary: 'Remote-first cybersecurity firm with a global team. Culture and security awareness are key drivers.', initiatives: 'Remote-first model, wellness days, family support programs, acquisition of Trelica for integrations.', tools: 'SDKs, AI agents, Slack, GitHub, Extended Access Management (XAM) platform.', opportunity: 'Reinforce culture and broadcast security awareness messages in their Toronto collaboration hub and to remote teams.' },
+            { id: 'agnico', name: 'Agnico Eagle', industry: 'Mining', workforce: 10160, globalPresence: 4, logo: '⛏️', dtScore: 4, themes: { distributed: 5, engagement: 4, digital: 4, security: 4 }, summary: 'Global gold mining company with a large, deskless workforce in hazardous environments.', initiatives: 'Focus on "People" as a strategic pillar, Ethics Hotline, Digital Transformation Journey.', tools: 'Monitoring Operations Centre (MOC), TopVu RFID for safety, AI/Machine Learning.', opportunity: 'Broadcast critical safety alerts, visualize MOC data, and share operational dashboards at remote mine sites.' },
+            { id: 'aircanada', name: 'Air Canada', industry: 'Aviation', workforce: 35700, globalPresence: 6, logo: '✈️', dtScore: 4, themes: { distributed: 5, engagement: 5, digital: 4, security: 4 }, summary: 'Canada\'s largest airline with a massive, mobile, and deskless global workforce.', initiatives: 'Recognized for Diversity & Inclusion, "Most Engaged Workplaces" award, culture change programs.', tools: 'NetLine/Ops ++, Global Aviation Cloud, Dataiku, Snowflake for data analytics.', opportunity: 'Display real-time operational updates, safety bulletins, and HR/D&I messages in crew rooms, hangars, and ops centers.' },
+            { id: 'applyboard', name: 'ApplyBoard', industry: 'Education Technology', workforce: 1200, globalPresence: 30, logo: '🎓', dtScore: 5, themes: { distributed: 4, engagement: 4, digital: 5, security: 3 }, summary: 'Hyper-growth EdTech platform connecting students with global institutions, with a rapidly scaling global team.', initiatives: '"Great Place to Work" certification, Employee Family Assistance Program, mission-driven culture.', tools: 'AI-powered advisors (Abbie), Salesforce, Slack, Zoom, Jira, Google Workspace.', opportunity: 'Reinforce culture and values in global offices, celebrate milestones, share team updates, and welcome new hires.' },
+            { id: 'apotex', name: 'Apotex', industry: 'Pharmaceuticals', workforce: 8000, globalPresence: 70, logo: '💊', dtScore: 3, themes: { distributed: 4, engagement: 3, digital: 3, security: 5 }, summary: 'Major pharmaceutical producer with a large global workforce in a highly regulated industry.', initiatives: '"Winning Behaviours" like Rigor & Discipline, professional development, complex IT project management.', tools: 'Apotex 360 (external platform), Agile/Waterfall project methodologies.', opportunity: 'Display GMP reminders, safety protocols, production schedules, and quality metrics in manufacturing facilities and R&D centers.' }
+        ],
+        themes: [
+            { id: 'distributed', title: 'Distributed Workforce', icon: '🌍', description: 'A striking commonality is the operation with significantly distributed workforces. This fundamental shift requires a departure from traditional, centralized communication models towards more agile, multi-channel strategies that bridge geographical, temporal, and functional divides.' },
+            { id: 'engagement', title: 'Employee Engagement', icon: '❤️', description: 'There is a clear and consistent recognition that employee engagement is a critical factor for talent retention and productivity. Communication acts as the vital thread that weaves diverse engagement initiatives together, reinforcing values and celebrating successes.' },
+            { id: 'digital', title: 'Digital Transformation', icon: '💡', description: 'All five companies have embraced digital transformation, extending to internal operations and communication systems. This creates data-rich environments where the challenge is to communicate insights effectively to the broader workforce, not just provide access.' },
+            { id: 'security', title: 'Secure Information Flow', icon: '🛡️', description: 'A consistent theme is the paramount importance of secure and accessible information flow. This means ensuring safety-critical information is reliably received, sensitive data is protected, and all employees can access what they need easily and securely.' }
+        ],
+        opportunities: [
+            { title: 'For Distributed Teams', content: '"We see many organizations, including those in [prospect\'s industry], adapting communication for [remote/deskless/global] teams. What approaches are you finding most effective for ensuring consistent messaging and strong engagement across your distributed workforce?"' },
+            { title: 'For Digital Transformation', content: '"Your investment in [mention specific initiative, e.g., the Monitoring Operations Centre] is impressive. How are you currently visualizing and communicating the valuable insights from these systems to your broader teams to drive action?"' },
+            { title: 'For Employee Engagement', content: '"A significant focus for many leading companies is on [mention engagement driver, e.g., employee well-being or D&I]. What role does visual communication currently play in amplifying these important initiatives within your company?"' },
+            { title: 'For Critical Information', content: '"In an operational environment where [safety/security/compliance] is paramount, how do you ensure that critical messages are not only delivered but are also consistently seen and understood by all employees, especially those without regular desk access?"' }
+        ]
+    };
+
+    function createRadarChart() {
+        const ctx = document.getElementById('themesRadarChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: appData.themes.map(t => t.title),
+                datasets: appData.companies.map((c, index) => ({
+                    label: c.name,
+                    data: Object.values(c.themes),
+                    fill: true,
+                    backgroundColor: `rgba(${getComputedStyle(document.body).getPropertyValue('--chart-color-' + (index + 1))}, 0.2)`,
+                    borderColor: `rgb(${getComputedStyle(document.body).getPropertyValue('--chart-color-' + (index + 1))})`,
+                    pointBackgroundColor: `rgb(${getComputedStyle(document.body).getPropertyValue('--chart-color-' + (index + 1))})`,
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.r !== null) {
+                                    label += context.parsed.r;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: { color: '#e2e8f0' },
+                        grid: { color: '#e2e8f0' },
+                        pointLabels: { font: { size: 12 }, color: '#475569' },
+                        ticks: {
+                            color: '#64748b',
+                            backdropColor: 'rgba(255, 255, 255, 0.75)',
+                            stepSize: 1
+                        },
+                        min: 0,
+                        max: 5
+                    }
+                }
+            }
+        });
+    }
+
+    function createBarChart() {
+        const ctx = document.getElementById('workforceBarChart').getContext('2d');
+        const sortedCompanies = [...appData.companies].sort((a, b) => a.workforce - b.workforce);
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedCompanies.map(c => c.name),
+                datasets: [{
+                    label: 'Workforce Size',
+                    data: sortedCompanies.map(c => c.workforce),
+                    backgroundColor: sortedCompanies.map((c, index) => `rgba(${getComputedStyle(document.body).getPropertyValue('--chart-color-' + (appData.companies.findIndex(co => co.id === c.id) + 1))}, 0.7)`),
+                    borderColor: sortedCompanies.map((c, index) => `rgb(${getComputedStyle(document.body).getPropertyValue('--chart-color-' + (appData.companies.findIndex(co => co.id === c.id) + 1))})`),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' }
+                    },
+                    y: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function createBubbleChart() {
+        const ctx = document.getElementById('landscapeBubbleChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bubble',
+            data: {
+                datasets: appData.companies.map((c, index) => ({
+                    label: c.name,
+                    data: [{
+                        x: c.dtScore,
+                        y: c.workforce,
+                        r: c.globalPresence * 2 + 5 
+                    }],
+                    backgroundColor: `rgba(${getComputedStyle(document.body).getPropertyValue('--chart-color-' + (index + 1))}, 0.7)`,
+                    borderColor: `rgb(${getComputedStyle(document.body).getPropertyValue('--chart-color-' + (index + 1))})`,
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const company = appData.companies[context.datasetIndex];
+                                return [
+                                    `${company.name}`,
+                                    `Workforce: ${company.workforce.toLocaleString()}`,
+                                    `Digital Score: ${company.dtScore}`,
+                                    `Global Presence: ${company.globalPresence > 6 ? `~${company.globalPresence} Countries` : `${company.globalPresence} Continents/Regions`}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Digital Transformation Score', color: '#475569' },
+                        grid: { color: '#f1f5f9' },
+                        min: 2,
+                        max: 6
+                    },
+                    y: {
+                        title: { display: true, text: 'Workforce Size', color: '#475569' },
+                        grid: { color: '#f1f5f9' },
+                        type: 'logarithmic'
+                    }
+                }
+            }
+        });
+    }
+
+    function setupThemeExplorer() {
+        const tabsContainer = document.getElementById('theme-tabs');
+        const contentContainer = document.getElementById('theme-content');
+
+        appData.themes.forEach(theme => {
+            const tab = document.createElement('button');
+            tab.className = 'inactive-tab px-4 py-2 rounded-full border-2 font-semibold transition-colors duration-200 text-sm sm:text-base';
+            tab.innerHTML = `<span class="mr-2">${theme.icon}</span>${theme.title}`;
+            tab.dataset.themeId = theme.id;
+            tabsContainer.appendChild(tab);
+        });
+
+        tabsContainer.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button) {
+                const themeId = button.dataset.themeId;
+                updateActiveTab(themeId);
+                renderThemeContent(themeId);
+            }
+        });
+
+        updateActiveTab(appData.themes[0].id);
+        renderThemeContent(appData.themes[0].id);
+    }
+
+    function updateActiveTab(themeId) {
+        document.querySelectorAll('#theme-tabs button').forEach(btn => {
+            if (btn.dataset.themeId === themeId) {
+                btn.classList.add('active-tab');
+                btn.classList.remove('inactive-tab');
+            } else {
+                btn.classList.add('inactive-tab');
+                btn.classList.remove('active-tab');
+            }
+        });
+    }
+
+    function renderThemeContent(themeId) {
+        const contentContainer = document.getElementById('theme-content');
+        contentContainer.innerHTML = '';
+        const selectedTheme = appData.themes.find(t => t.id === themeId);
+        
+        let headerCard = `
+            <div class="md:col-span-2 lg:col-span-3 bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                <h3 class="text-xl font-bold text-teal-700 mb-2">${selectedTheme.icon} ${selectedTheme.title}</h3>
+                <p class="text-slate-600">${selectedTheme.description}</p>
+            </div>
+        `;
+        contentContainer.innerHTML += headerCard;
+
+        appData.companies.forEach(company => {
+            const card = document.createElement('div');
+            card.className = 'bg-white p-6 rounded-lg shadow-sm border border-slate-200 flex flex-col';
+            card.innerHTML = `
+                <div class="flex items-center mb-3">
+                    <span class="text-3xl mr-3">${company.logo}</span>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-lg">${company.name}</h4>
+                        <p class="text-sm text-slate-500">${company.industry}</p>
+                    </div>
+                </div>
+                <p class="text-slate-600 flex-grow">${company.summary}</p>
+            `;
+            contentContainer.appendChild(card);
+        });
+    }
+
+    function setupCompanyProfiles() {
+        const logosContainer = document.getElementById('company-logos');
+        const modalContainer = document.getElementById('company-modal');
+
+        appData.companies.forEach(company => {
+            const logoButton = document.createElement('button');
+            logoButton.className = 'flex flex-col items-center gap-2 text-slate-600 hover:text-teal-600 transition-colors duration-200';
+            logoButton.dataset.companyId = company.id;
+            logoButton.innerHTML = `
+                <div class="text-6xl">${company.logo}</div>
+                <span class="font-semibold">${company.name}</span>
+            `;
+            logosContainer.appendChild(logoButton);
+        });
+
+        logosContainer.addEventListener('click', e => {
+            const button = e.target.closest('button');
+            if (button) {
+                const companyId = button.dataset.companyId;
+                const company = appData.companies.find(c => c.id === companyId);
+                renderCompanyModal(company);
+            }
+        });
+        
+        modalContainer.addEventListener('click', e => {
+            if (e.target.id === 'modal-close' || e.target.closest('#modal-close') || e.target.classList.contains('modal-overlay')) {
+                modalContainer.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        });
+    }
+    
+    function renderCompanyModal(company) {
+        const modalContainer = document.getElementById('company-modal');
+        modalContainer.innerHTML = `
+            <div class="modal-overlay">
+                <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-2xl m-4 modal-content relative">
+                    <button id="modal-close" class="absolute top-4 right-4 text-slate-500 hover:text-slate-800 transition-colors">&times;</button>
+                    <div class="p-6 sm:p-8">
+                        <div class="flex items-start sm:items-center mb-6 flex-col sm:flex-row">
+                            <span class="text-7xl mr-6 mb-4 sm:mb-0">${company.logo}</span>
+                            <div>
+                                <h2 class="text-3xl font-bold text-slate-800">${company.name}</h2>
+                                <p class="text-slate-500 text-lg">${company.industry}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                           <div>
+                                <h3 class="font-semibold text-teal-700 mb-1">Key Initiatives</h3>
+                                <p class="text-slate-600">${company.initiatives}</p>
+                           </div>
+                           <div>
+                                <h3 class="font-semibold text-teal-700 mb-1">Digital Tools & Platforms</h3>
+                                <p class="text-slate-600">${company.tools}</p>
+                           </div>
+                           <div class="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg">
+                                <h3 class="font-semibold text-teal-800 mb-1">ScreenCloud Opportunity</h3>
+                                <p class="text-teal-900">${company.opportunity}</p>
+                           </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        modalContainer.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function setupAccordion() {
+        const container = document.getElementById('accordion-container');
+        appData.opportunities.forEach((item, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bg-white rounded-lg shadow-sm border border-slate-200';
+            wrapper.innerHTML = `
+                <button class="accordion-trigger w-full flex justify-between items-center text-left p-4 sm:p-5 font-semibold text-slate-800 hover:bg-slate-50 transition-colors">
+                    <span>${item.title}</span>
+                    <span class="transform transition-transform duration-300 text-teal-600 text-2xl">+</span>
+                </button>
+                <div class="accordion-content">
+                    <p class="p-4 sm:p-5 pt-0 text-slate-600">${item.content}</p>
+                </div>
+            `;
+            container.appendChild(wrapper);
+        });
+
+        container.addEventListener('click', e => {
+            const trigger = e.target.closest('.accordion-trigger');
+            if (trigger) {
+                const content = trigger.nextElementSibling;
+                const icon = trigger.querySelector('span:last-child');
+                const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+
+                document.querySelectorAll('.accordion-content').forEach(el => {
+                    if (el !== content) {
+                       el.style.maxHeight = '0px';
+                       el.previousElementSibling.querySelector('span:last-child').classList.remove('rotate-45');
+                    }
+                });
+
+                if (isOpen) {
+                    content.style.maxHeight = '0px';
+                    icon.classList.remove('rotate-45');
+                } else {
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                    icon.classList.add('rotate-45');
+                }
+            }
+        });
+    }
+
+    function setChartColors() {
+        const colors = [ '59, 130, 246', '249, 115, 22', '16, 185, 129', '139, 92, 246', '239, 68, 68' ];
+        colors.forEach((color, index) => {
+            document.body.style.setProperty(`--chart-color-${index + 1}`, color);
+        });
+    }
+
+    setChartColors();
+    createRadarChart();
+    createBarChart();
+    createBubbleChart();
+    setupThemeExplorer();
+    setupCompanyProfiles();
+    setupAccordion();
+});
+</script>
+</body>
+</html>
